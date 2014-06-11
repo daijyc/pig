@@ -404,7 +404,7 @@
     <dependency org="hsqldb" name="hsqldb" rev="${hsqldb.version}"
       conf="test->default" />
     <dependency org="org.apache.hive" name="hive-exec" rev="${hive.version}"
-      conf="test->master" />
+      conf="compile->master" />
 
     <dependency org="org.vafer" name="jdeb" rev="${jdeb.version}"
       conf="compile->master">
