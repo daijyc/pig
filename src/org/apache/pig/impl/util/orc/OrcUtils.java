@@ -131,7 +131,9 @@ public class OrcUtils {
             result = (int)(Short)poi.getPrimitiveJavaObject(obj);
             break;
         case BINARY:
-            result = new DataByteArray(((BytesWritable) obj).copyBytes());
+            byte[] r = new byte[((BytesWritable)obj).getLength()];
+            System.arraycopy(((BytesWritable)obj).getBytes(), 0, r, 0, ((BytesWritable)obj).getLength());
+            result = new DataByteArray(r);
             break;
         case TIMESTAMP:
             java.sql.Timestamp origTimeStamp = (java.sql.Timestamp)poi.getPrimitiveJavaObject(obj);
