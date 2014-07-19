@@ -411,15 +411,15 @@
     <dependency org="org.apache.hive" name="hive-common" rev="${hive.version}"
       conf="compile->master" />
     <dependency org="org.apache.hive.shims" name="hive-shims-common" rev="${hive.version}"
-      conf="compile->master" />
+      conf="test->master" />
     <dependency org="org.apache.hive.shims" name="hive-shims-common-secure" rev="${hive.version}"
-      conf="compile->master" />
+      conf="test->master" />
     <dependency org="org.apache.hive.shims" name="hive-shims-0.23" rev="${hive.version}"
       conf="hadoop23->master" />
     <dependency org="org.apache.hive.shims" name="hive-shims-0.20S" rev="${hive.version}"
       conf="hadoop20->master" />
     <dependency org="org.iq80.snappy" name="snappy" rev="${snappy.version}"
-      conf="compile->master" />
+      conf="test->master" />
 
     <dependency org="org.vafer" name="jdeb" rev="${jdeb.version}"
       conf="compile->master">
