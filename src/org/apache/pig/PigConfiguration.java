@@ -81,6 +81,12 @@ public class PigConfiguration {
      */
     public static final String OPT_ACCUMULATOR = "opt.accumulator";
 
+
+    /**
+     * This key is used to configure auto parallelism in tez. Default is true.
+     */
+    public static final String TEZ_AUTO_PARALLELISM = "pig.tez.auto.parallelism";
+
     /**
      * This key is used to enable union optimization.
      */
@@ -90,6 +96,11 @@ public class PigConfiguration {
      * This key is used to define whether to reuse AM in Tez jobs.
      */
     public static final String TEZ_SESSION_REUSE = "pig.tez.session.reuse";
+
+    /**
+     * This key is used to configure the interval of dag status report in seconds.
+     */
+    public static final String TEZ_DAG_STATUS_REPORT_INTERVAL = "pig.tez.dag.status.report.interval";
 
     /**
      * Turns off use of combiners in MapReduce jobs produced by Pig.
@@ -254,4 +265,9 @@ public class PigConfiguration {
      * which case, the entry would be "pig.whitelist=load,store,filter,group"
      */
     public static final String PIG_WHITELIST = "pig.whitelist";
+
+    /**
+     * This key is used to turns off use of task reports in job statistics.
+     */
+    public static final String PIG_NO_TASK_REPORT = "pig.stats.notaskreport";
 }

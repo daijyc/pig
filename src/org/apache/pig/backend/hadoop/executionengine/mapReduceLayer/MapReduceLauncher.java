@@ -631,6 +631,7 @@ public class MapReduceLauncher extends Launcher{
         MRCompiler comp = new MRCompiler(php, pc);
         comp.compile();
         comp.aggregateScalarsFiles();
+        comp.connectSoftLink();
         MROperPlan plan = comp.getMRPlan();
 
         //display the warning message(s) from the MRCompiler
@@ -801,13 +802,17 @@ public class MapReduceLauncher extends Launcher{
         }
         try {
             TaskReport[] mapRep = HadoopShims.getTaskReports(job, TaskType.MAP);
-            getErrorMessages(mapRep, "map", errNotDbg, pigContext);
-            totalHadoopTimeSpent += computeTimeSpent(mapRep);
-            mapRep = null;
+            if (mapRep != null) {
+                getErrorMessages(mapRep, "map", errNotDbg, pigContext);
+                totalHadoopTimeSpent += computeTimeSpent(mapRep);
+                mapRep = null;
+            }
             TaskReport[] redRep = HadoopShims.getTaskReports(job, TaskType.REDUCE);
-            getErrorMessages(redRep, "reduce", errNotDbg, pigContext);
-            totalHadoopTimeSpent += computeTimeSpent(redRep);
-            redRep = null;
+            if (redRep != null) {
+                getErrorMessages(redRep, "reduce", errNotDbg, pigContext);
+                totalHadoopTimeSpent += computeTimeSpent(redRep);
+                redRep = null;
+            }
         } catch (IOException e) {
             if (job.getState() == Job.SUCCESS) {
                 // if the job succeeded, let the user know that

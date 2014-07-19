@@ -186,7 +186,13 @@
       <exclude org="org.codehaus.jackson" module="jackson-mapper-asl"/>
     </dependency>
     <dependency org="org.apache.avro" name="avro-mapred" rev="${avro.version}"
-      conf="compile->default;checkstyle->master">
+      conf="hadoop20->default;checkstyle->master">
+      <exclude org="org.codehaus.jackson" module="jackson-core-asl"/>
+      <exclude org="org.codehaus.jackson" module="jackson-mapper-asl"/>
+    </dependency>
+    <dependency org="org.apache.avro" name="avro-mapred" rev="${avro.version}"
+      conf="hadoop23->default;checkstyle->master">
+      <artifact name="avro-mapred" type="jar" m:classifier="hadoop2"/>
       <exclude org="org.codehaus.jackson" module="jackson-core-asl"/>
       <exclude org="org.codehaus.jackson" module="jackson-mapper-asl"/>
     </dependency>
@@ -333,9 +339,9 @@
       <artifact name="hbase-hadoop-compat" type="test-jar" ext="jar" m:classifier="tests"/>
     </dependency>
 
-    <dependency org="org.apache.hbase" name="hbase-hadoop1-compat" rev="${hbase95.version}" conf="hbase95->master">
-      <artifact name="hbase-hadoop1-compat" type="jar"/>
-      <artifact name="hbase-hadoop1-compat" type="test-jar" ext="jar" m:classifier="tests"/>
+    <dependency org="org.apache.hbase" name="hbase-${hbase.hadoop.version}-compat" rev="${hbase95.version}" conf="hbase95->master">
+      <artifact name="hbase-${hbase.hadoop.version}-compat" type="jar"/>
+      <artifact name="hbase-${hbase.hadoop.version}-compat" type="test-jar" ext="jar" m:classifier="tests"/>
       <exclude org="org.apache.hadoop" module="hadoop-core"/>
       <exclude org="org.slf4j" module="slf4j-api"/>
       <exclude org="stax" module="stax-api" />
@@ -397,7 +403,22 @@
     <!-- for piggybank -->
     <dependency org="hsqldb" name="hsqldb" rev="${hsqldb.version}"
       conf="test->default" />
-    <dependency org="org.apache.hive" name="hive-exec" rev="${hive.version}"
+    <dependency org="org.apache.hive" name="hive-exec" rev="${hive.version}" conf="compile->master">
+      <artifact name="hive-exec" m:classifier="core" />
+    </dependency>
+    <dependency org="org.apache.hive" name="hive-serde" rev="${hive.version}"
+      conf="compile->master" />
+    <dependency org="org.apache.hive" name="hive-common" rev="${hive.version}"
+      conf="compile->master" />
+    <dependency org="org.apache.hive.shims" name="hive-shims-common" rev="${hive.version}"
+      conf="test->master" />
+    <dependency org="org.apache.hive.shims" name="hive-shims-common-secure" rev="${hive.version}"
+      conf="test->master" />
+    <dependency org="org.apache.hive.shims" name="hive-shims-0.23" rev="${hive.version}"
+      conf="hadoop23->master" />
+    <dependency org="org.apache.hive.shims" name="hive-shims-0.20S" rev="${hive.version}"
+      conf="hadoop20->master" />
+    <dependency org="org.iq80.snappy" name="snappy" rev="${snappy.version}"
       conf="test->master" />
 
     <dependency org="org.vafer" name="jdeb" rev="${jdeb.version}"
@@ -410,19 +431,19 @@
 
     <!-- for Tez integration -->
     <dependency org="org.apache.tez" name="tez" rev="${tez.version}"
-       conf="hadoop23->master"/>
+       conf="hadoop23->master" changing="true"/>
     <dependency org="org.apache.tez" name="tez-common" rev="${tez.version}"
-       conf="hadoop23->master"/>
+       conf="hadoop23->master" changing="true"/>
     <dependency org="org.apache.tez" name="tez-api" rev="${tez.version}"
-       conf="hadoop23->master"/>
+       conf="hadoop23->master" changing="true"/>
     <dependency org="org.apache.tez" name="tez-dag" rev="${tez.version}"
-       conf="hadoop23->master"/>
+       conf="hadoop23->master" changing="true"/>
     <dependency org="org.apache.tez" name="tez-runtime-internals" rev="${tez.version}"
-       conf="hadoop23->master"/>
+       conf="hadoop23->master" changing="true"/>
     <dependency org="org.apache.tez" name="tez-runtime-library" rev="${tez.version}"
-       conf="hadoop23->master"/>
+       conf="hadoop23->master" changing="true"/>
     <dependency org="org.apache.tez" name="tez-mapreduce" rev="${tez.version}"
-       conf="hadoop23->master"/>
+       conf="hadoop23->master" changing="true"/>
     <dependency org="org.apache.commons" name="commons-collections4" rev="${commons-collections4.version}"
       conf="hadoop23->master"/>
     <dependency org="org.codehaus.jettison" name="jettison" rev="${jettison.version}"

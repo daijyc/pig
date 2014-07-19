@@ -20,7 +20,7 @@ package org.apache.pig.backend.hadoop.executionengine.tez;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.URL;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -34,6 +34,7 @@ import org.apache.hadoop.yarn.api.records.LocalResource;
 import org.apache.hadoop.yarn.api.records.LocalResourceType;
 import org.apache.hadoop.yarn.api.records.LocalResourceVisibility;
 import org.apache.hadoop.yarn.util.ConverterUtils;
+import org.apache.pig.backend.hadoop.datastorage.HPath;
 import org.apache.pig.impl.PigContext;
 import org.apache.pig.impl.io.FileLocalizer;
 import org.apache.pig.impl.util.JarManager;
@@ -44,11 +45,11 @@ public class TezResourceManager {
     private Path stagingDir;
     private PigContext pigContext;
     private Configuration conf;
-    private String bootStrapJar;
+    private File bootStrapJar;
     private FileSystem remoteFs;
     public Map<String, Path> resources = new HashMap<String, Path>();
 
-    public String getBootStrapJar() {
+    public File getBootStrapJar() {
         return bootStrapJar;
     }
 
@@ -58,14 +59,14 @@ public class TezResourceManager {
         }
         return instance;
     }
-  
+
     public void init(PigContext pigContext, Configuration conf) throws IOException {
         if (!inited) {
-            this.stagingDir = FileLocalizer.getTemporaryPath(pigContext, "-tez-resource");;
+            this.stagingDir = ((HPath)FileLocalizer.getTemporaryResourcePath(pigContext)).getPath();
             this.pigContext = pigContext;
             this.conf = conf;
             String jar = JarManager.findContainingJar(org.apache.pig.Main.class);
-            this.bootStrapJar = new File(jar).getName().toString();
+            this.bootStrapJar = new File(jar);
             remoteFs = FileSystem.get(conf);
             addBootStrapJar();
             inited = true;
@@ -74,20 +75,24 @@ public class TezResourceManager {
 
     // Add files from the source FS as local resources. The resource name will
     // be the same as the file name.
-    public Path addTezResource(URL url) throws IOException {
+    public Path addTezResource(URI uri) throws IOException {
         synchronized(this) {
-            Path resourcePath = new Path(url.getFile());
+            Path resourcePath = new Path(uri.getPath());
             String resourceName = resourcePath.getName();
-    
+
             if (resources.containsKey(resourceName)) {
                 return resources.get(resourceName);
             }
-    
-            // Ship the resource to the staging directory on the remote FS
-            Path remoteFsPath = remoteFs.makeQualified(new Path(stagingDir, resourceName));
-            remoteFs.copyFromLocalFile(resourcePath, remoteFsPath);
-            resources.put(resourceName, remoteFsPath);
-            return remoteFsPath;
+ 
+            // Ship the local resource to the staging directory on the remote FS
+            if (uri.toString().startsWith("file:")) {
+                Path remoteFsPath = remoteFs.makeQualified(new Path(stagingDir, resourceName));
+                FileSystem.get(conf).copyFromLocalFile(resourcePath, remoteFsPath);
+                resources.put(resourceName, remoteFsPath);
+                return remoteFsPath;
+            }
+            resources.put(resourceName, resourcePath);
+            return resourcePath;
         }
     }
 
@@ -101,31 +106,32 @@ public class TezResourceManager {
         }
     }
 
-    public Map<String, LocalResource> addTezResources(Set<URL> resources) throws Exception {
+    public Map<String, LocalResource> addTezResources(Set<URI> resources) throws Exception {
         Set<String> resourceNames = new HashSet<String>();
-        for (URL url : resources) {
-            addTezResource(url);
-            resourceNames.add(new Path(url.getFile()).getName());
+        for (URI uri : resources) {
+            addTezResource(uri);
+            resourceNames.add(new Path(uri.getPath()).getName());
         }
         return getTezResources(resourceNames);
     }
 
     public void addBootStrapJar() throws IOException {
         synchronized(this) {
-            if (resources.containsKey(bootStrapJar)) {
+            String resourceName = bootStrapJar.getName();
+            if (resources.containsKey(resourceName)) {
                 return;
             }
-    
+
             FileSystem remoteFs = FileSystem.get(conf);
             File jobJar = File.createTempFile("Job", ".jar");
             jobJar.deleteOnExit();
             FileOutputStream fos = new FileOutputStream(jobJar);
             JarManager.createBootStrapJar(fos, pigContext);
-    
+
             // Ship the job.jar to the staging directory on the remote FS
-            Path remoteJarPath = remoteFs.makeQualified(new Path(stagingDir, bootStrapJar));
+            Path remoteJarPath = remoteFs.makeQualified(new Path(stagingDir, resourceName));
             remoteFs.copyFromLocalFile(new Path(jobJar.getAbsolutePath()), remoteJarPath);
-            resources.put(bootStrapJar, remoteJarPath);
+            resources.put(resourceName, remoteJarPath);
         }
     }
 

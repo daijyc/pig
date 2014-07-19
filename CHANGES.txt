@@ -24,6 +24,16 @@ INCOMPATIBLE CHANGES
  
 IMPROVEMENTS
 
+PIG-2122: Parameter Substitution doesn't work in the Grunt shell (daijy)
+
+PIG-4031: Provide Counter aggregation for Tez (daijy)
+
+PIG-4028: add a flag to control the ivy resolve/retrieve output (gkesavan via daijy)
+
+PIG-4015: Provide a way to disable auto-parallism in tez (daijy)
+
+PIG-3846: Implement automatic reducer parallelism (daijy)
+
 PIG-3939: SPRINTF function to format strings using a printf-style template (mrflip via cheolsoo)
 
 PIG-3970: Merge Tez branch into trunk (daijy)
@@ -31,6 +41,65 @@ PIG-3970: Merge Tez branch into trunk (daijy)
 OPTIMIZATIONS
  
 BUG FIXES
+
+PIG-4058: Use single config in Tez for input and output (rohini)
+
+PIG-3886: UdfDistributedCache_1 fails in tez branch (cheolsoo)
+
+PIG-4055 Build broke after TEZ-1130 API rename (knoguchi)
+
+PIG-3935: Port more mini cluster tests to Tez - part 5 (rohini)
+
+PIG-3984: PigServer.shutdown removes the tez resource folder (daijy via rohini)
+
+PIG-4048: TEZ-692 has a incompatible API change removing TezSession (rohini)
+
+PIG-4044: Pig should use avro-mapred-hadoop2.jar instead of avro-mapred.jar when compile with hadoop 2 (daijy)
+
+PIG-4043: JobClient.getMap/ReduceTaskReports() causes OOM for jobs with a large number of tasks (cheolsoo)
+
+PIG-4036: Fix e2e failures - JobManagement_3, CmdErrors_3 and BigData_4 (daijy)
+
+PIG-4041: org.apache.pig.backend.hadoop.executionengine.tez.util.MRToTezHelper compiling error (jeagles via cheolsoo)
+
+PIG-4038: SPRINTF should return NULL on any NULL input (mrflip via daijy)
+
+PIG-4025: TestLoadFuncWrapper, TestLoadFuncMetaDataWrapper,TestStoreFuncWrapper
+ and TestStoreFuncMetadataWrapper fail on IBM JDK (ahireanup via daijy)
+
+PIG-4024: TestPigStreamingUDF and TestPigStreaming fail on IBM JDK (ahireanup via daijy)
+
+PIG-4023: BigDec/Int sort is broken (ahireanup via daijy)
+
+PIG-4003: Error is thrown by JobStats.getOutputSize() when storing to a Hive table (cheolsoo)
+
+PIG-4035: Fix CollectedGroup e2e tests for tez (daijy)
+
+PIG-4034: Exclude TestTezAutoParallelism when -Dhadoopversion=20 (cheolsoo)
+
+PIG-4033: Fix MergeSparseJoin e2e tests on tez (daijy)
+
+PIG-3478: Make StreamingUDF work for Hadoop 2 (lbendig via daijy)
+
+PIG-4032: BloomFilter fails with s3 path in Hadoop 2.4 (cheolsoo)
+
+PIG-4018: Schema validation fails with UNION ONSCHEMA (daijy)
+
+PIG-4022: Fix tez e2e test SkewedJoin_6 (daijy)
+
+PIG-4001: POPartialAgg aggregates too aggressively when multiple values aggregated (tmwoodruff via cheolsoo)
+
+PIG-4027: Always check for latest Tez snapshot dependencies (lbendig via cheolsoo)
+
+PIG-4020: Fix tez e2e tests MapPartialAgg_[2-4], StreamingPerformance_[6-7] (daijy)
+
+PIG-4019: Compilation broken after TEZ-1169 (daijy)
+
+PIG-4014: Fix Rank e2e test failures on tez (daijy)
+
+PIG-4013: Order by multiple column fail on Tez (daijy)
+
+PIG-3983: TestGrunt.testKeepGoigFailed fail on tez mode (daijy)
 
 PIG-3959: Skewed join followed by replicated join fails in Tez (cheolsoo)
 
@@ -67,6 +136,10 @@ PIG-3419: Pluggable Execution Engine (achalsoni81 via cheolsoo)
 PIG-2207: Support custom counters for aggregating warnings from different udfs (aniket486)
 
 IMPROVEMENTS
+
+PIG-3892: Pig distribution for hadoop 2 (daijy)
+
+PIG-4006: Make the interval of DAGStatus report configurable (cheolsoo)
 
 PIG-3999: Document PIG-3388 (lbendig via cheolsoo)
 
@@ -184,6 +257,20 @@ OPTIMIZATIONS
 PIG-3882: Multiquery off mode execution is not done in batch and very inefficient (rohini)
  
 BUG FIXES
+
+PIG-4037: TestHBaseStorage, TestAccumuloPigCluster has failures with hadoopversion=23 (daijy)
+
+PIG-4005: depend on hbase-hadoop2-compat rather than hbase-hadoop1-compat when hbaseversion is 95 (daijy)
+
+PIG-4021: Fix TestHBaseStorage failure after auto local mode change (PIG-3463) (daijy)
+
+PIG-4029: TestMRCompiler is broken after PIG-3874 (daijy)
+
+PIG-4030: TestGrunt, TestPigRunner fail after PIG-3892 (daijy)
+
+PIG-3975: Multiple Scalar reference calls leading to missing records (knoguchi via rohini)
+
+PIG-4017: NPE thrown from JobControlCompiler.shipToHdfs (cheolsoo)
 
 PIG-3997: Issue on Pig docs: Testing and Diagnostics (zjffdu via cheolsoo)
 

@@ -20,7 +20,9 @@ package org.apache.pig.backend.hadoop.executionengine.tez;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -28,25 +30,30 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.lib.jobcontrol.ControlledJob;
 import org.apache.pig.PigConfiguration;
+import org.apache.pig.PigWarning;
 import org.apache.pig.backend.BackendException;
+import org.apache.pig.backend.executionengine.ExecException;
 import org.apache.pig.backend.hadoop.datastorage.ConfigurationUtil;
 import org.apache.pig.backend.hadoop.executionengine.Launcher;
 import org.apache.pig.backend.hadoop.executionengine.physicalLayer.plans.PhysicalPlan;
+import org.apache.pig.backend.hadoop.executionengine.physicalLayer.relationalOperators.POStore;
 import org.apache.pig.backend.hadoop.executionengine.tez.optimizers.NoopFilterRemover;
 import org.apache.pig.backend.hadoop.executionengine.tez.optimizers.UnionOptimizer;
 import org.apache.pig.impl.PigContext;
 import org.apache.pig.impl.io.FileLocalizer;
+import org.apache.pig.impl.plan.CompilationMessageCollector;
 import org.apache.pig.impl.plan.CompilationMessageCollector.MessageType;
 import org.apache.pig.impl.plan.PlanException;
 import org.apache.pig.impl.plan.VisitorException;
 import org.apache.pig.impl.util.UDFContext;
+import org.apache.pig.tools.pigstats.OutputStats;
 import org.apache.pig.tools.pigstats.PigStats;
+import org.apache.pig.tools.pigstats.tez.TezScriptState;
 import org.apache.pig.tools.pigstats.tez.TezStats;
 import org.apache.pig.tools.pigstats.tez.TezTaskStats;
-import org.apache.pig.tools.pigstats.tez.TezScriptState;
 import org.apache.tez.common.TezUtils;
-import org.apache.tez.dag.api.Vertex;
 import org.apache.tez.dag.api.TezConfiguration;
+import org.apache.tez.dag.api.Vertex;
 
 /**
  * Main class that launches pig for Tez
@@ -60,6 +67,10 @@ public class TezLauncher extends Launcher {
 
     @Override
     public PigStats launchPig(PhysicalPlan php, String grpName, PigContext pc) throws Exception {
+        if (pc.defaultParallel == -1 &&
+                !Boolean.parseBoolean(pc.getProperties().getProperty(PigConfiguration.TEZ_AUTO_PARALLELISM, "true"))) {
+            pc.defaultParallel = 1;
+        }
         aggregateWarning = Boolean.parseBoolean(pc.getProperties().getProperty("aggregate.warning", "false"));
         Configuration conf = ConfigurationUtil.toConfiguration(pc.getProperties(), true);
 
@@ -152,23 +163,75 @@ public class TezLauncher extends Launcher {
 
             notifyFinishedOrFailed(job);
             tezStats.accumulateStats(job);
+            Map<Enum, Long> warningAggMap = new HashMap<Enum, Long>();
+
+            if (aggregateWarning && job.getJobState() == ControlledJob.State.SUCCESS) {
+                for (Vertex vertex : job.getDAG().getVertices()) {
+                    String vertexName = vertex.getName();
+                    Map<String, Map<String, Long>> counterGroups = job.getVertexCounters(vertexName);
+                    computeWarningAggregate(counterGroups, warningAggMap);
+                }
+            }
+
+            if(aggregateWarning) {
+                CompilationMessageCollector.logAggregate(warningAggMap, MessageType.Warning, log) ;
+            }
             tezScriptState.emitProgressUpdatedNotification(100);
         }
 
         tezStats.finish();
+        for (OutputStats output : tezStats.getOutputStats()) {
+            POStore store = output.getPOStore();
+            try {
+                if (!output.isSuccessful()) {
+                    store.getStoreFunc().cleanupOnFailure(
+                            store.getSFile().getFileName(),
+                            new org.apache.hadoop.mapreduce.Job(output.getConf()));
+                } else {
+                    store.getStoreFunc().cleanupOnSuccess(
+                            store.getSFile().getFileName(),
+                            new org.apache.hadoop.mapreduce.Job(output.getConf()));
+                }
+            } catch (IOException e) {
+                throw new ExecException(e);
+            } catch (AbstractMethodError nsme) {
+                // Just swallow it.  This means we're running against an
+                // older instance of a StoreFunc that doesn't implement
+                // this method.
+            }
+        }
         tezScriptState.emitLaunchCompletedNotification(tezStats.getNumberSuccessfulJobs());
 
         return tezStats;
     }
 
+    void computeWarningAggregate(Map<String, Map<String, Long>> counterGroups, Map<Enum, Long> aggMap) {
+        for (Map<String, Long> counters : counterGroups.values()) {
+            for (Enum e : PigWarning.values()) {
+                if (counters.containsKey(e.toString())) {
+                    if (aggMap.containsKey(e.toString())) {
+                        Long currentCount = aggMap.get(e.toString());
+                        currentCount = (currentCount == null ? 0 : currentCount);
+                        if (counters != null) {
+                            currentCount += counters.get(e.toString());
+                        }
+                        aggMap.put(e, currentCount);
+                    } else {
+                        aggMap.put(e, counters.get(e.toString()));
+                    }
+                }
+            }
+        }
+    }
+
     private void notifyStarted(TezJob job) throws IOException {
         for (Vertex v : job.getDAG().getVertices()) {
-            TezTaskStats tts = tezStats.getVertexStats(v.getVertexName());
+            TezTaskStats tts = tezStats.getVertexStats(v.getName());
             byte[] bb = v.getProcessorDescriptor().getUserPayload();
             Configuration conf = TezUtils.createConfFromUserPayload(bb);
             tts.setConf(conf);
-            tts.setId(v.getVertexName());
-            tezScriptState.emitJobStartedNotification(v.getVertexName());
+            tts.setId(v.getName());
+            tezScriptState.emitJobStartedNotification(v.getName());
         }
     }
 
@@ -191,12 +254,12 @@ public class TezLauncher extends Launcher {
     private void notifyFinishedOrFailed(TezJob job) {
         if (job.getJobState() == ControlledJob.State.SUCCESS) {
             for (Vertex v : job.getDAG().getVertices()) {
-                TezTaskStats tts = tezStats.getVertexStats(v.getVertexName());
+                TezTaskStats tts = tezStats.getVertexStats(v.getName());
                 tezScriptState.emitjobFinishedNotification(tts);
             }
         } else if (job.getJobState() == ControlledJob.State.FAILED) {
             for (Vertex v : ((TezJob)job).getDAG().getVertices()) {
-                TezTaskStats tts = tezStats.getVertexStats(v.getVertexName());
+                TezTaskStats tts = tezStats.getVertexStats(v.getName());
                 tezScriptState.emitJobFailedNotification(tts);
             }
         }

@@ -24,18 +24,13 @@ import org.apache.pig.backend.hadoop.executionengine.physicalLayer.Result;
 import org.apache.pig.backend.hadoop.executionengine.physicalLayer.plans.PhyPlanVisitor;
 import org.apache.pig.data.Tuple;
 import org.apache.pig.data.TupleFactory;
+import org.apache.pig.impl.builtin.PoissonSampleLoader;
 import org.apache.pig.impl.plan.OperatorKey;
 import org.apache.pig.impl.plan.VisitorException;
 
 public class POPoissonSample extends PhysicalOperator {
 
     private static final long serialVersionUID = 1L;
-
-    // marker string to mark the last sample row, which has total number or rows
-    // seen by this map instance. this string will be in the 2nd last column of
-    // the last sample row it is used by GetMemNumRows.
-    public static final String NUMROWS_TUPLE_MARKER =
-        "\u4956\u3838_pig_inTeRnal-spEcial_roW_num_tuple3kt579CFLehkblah";
 
     private static final TupleFactory tf = TupleFactory.getInstance();
     private static Result eop = new Result(POStatus.STATUS_EOP, null);
@@ -139,13 +134,14 @@ public class POPoissonSample extends PhysicalOperator {
             res = processInput();
             if (res.returnStatus == POStatus.STATUS_NULL) {
                 continue;
-            } else if (res.returnStatus == POStatus.STATUS_EOP
-                    || res.returnStatus == POStatus.STATUS_ERR) {
+            } else if (res.returnStatus == POStatus.STATUS_EOP) {
                 if (this.parentPlan.endOfAllInput) {
                     return createNumRowTuple((Tuple)newSample.result);
                 } else {
-                    continue;
+                    return res;
                 }
+            } else if (res.returnStatus == POStatus.STATUS_ERR){
+                return res;
             }
             rowNum++;
         }
@@ -155,13 +151,14 @@ public class POPoissonSample extends PhysicalOperator {
             res = processInput();
             if (res.returnStatus == POStatus.STATUS_NULL) {
                 continue;
-            } else if (res.returnStatus == POStatus.STATUS_EOP
-                    || res.returnStatus == POStatus.STATUS_ERR) {
+            } else if (res.returnStatus == POStatus.STATUS_EOP) {
                 if (this.parentPlan.endOfAllInput) {
                     return createNumRowTuple((Tuple)newSample.result);
                 } else {
-                    continue;
+                    return res;
                 }
+            } else if (res.returnStatus == POStatus.STATUS_ERR){
+                return res;
             }
 
             if (res.result == null) {
@@ -226,7 +223,7 @@ public class POPoissonSample extends PhysicalOperator {
             }
         }
 
-        t.set(sz, NUMROWS_TUPLE_MARKER);
+        t.set(sz, PoissonSampleLoader.NUMROWS_TUPLE_MARKER);
         t.set(sz + 1, rowNum);
         numRowSplTupleReturned = true;
         return new Result(POStatus.STATUS_OK, t);

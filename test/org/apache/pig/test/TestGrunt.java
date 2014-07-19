@@ -54,6 +54,7 @@ import org.apache.pig.test.Util.ProcessReturnInfo;
 import org.apache.pig.tools.grunt.Grunt;
 import org.apache.pig.tools.pigscript.parser.ParseException;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -848,7 +849,7 @@ public class TestGrunt {
 
     @Test
     public void testIllustrate() throws Throwable {
-        if (!Util.isMapredExecType(cluster.getExecType())) return;
+        Assume.assumeTrue("Skip this test for TEZ. See PIG-3993", Util.isMapredExecType(cluster.getExecType()));
         PigServer server = new PigServer(cluster.getExecType(), cluster.getProperties());
         PigContext context = server.getPigContext();
 
@@ -873,7 +874,7 @@ public class TestGrunt {
 
     @Test
     public void testKeepGoing() throws Throwable {
-        if (!Util.isMapredExecType(cluster.getExecType())) return;
+        Assume.assumeTrue("Skip this test for TEZ", Util.isMapredExecType(cluster.getExecType()));
         PigServer server = new PigServer(cluster.getExecType(), cluster.getProperties());
 
         PigContext context = server.getPigContext();
@@ -961,7 +962,7 @@ public class TestGrunt {
 
     @Test
     public void testStopOnFailure() throws Throwable {
-        if (!Util.isMapredExecType(cluster.getExecType())) return;
+        Assume.assumeTrue("Skip this test for TEZ", Util.isMapredExecType(cluster.getExecType()));
         PigServer server = new PigServer(cluster.getExecType(), cluster.getProperties());
         PigContext context = server.getPigContext();
         context.getProperties().setProperty("stop.on.failure", ""+true);
@@ -1186,8 +1187,12 @@ public class TestGrunt {
     public void testRegisterWithQuotes() throws Throwable {
         PigServer server = new PigServer(cluster.getExecType(), cluster.getProperties());
         PigContext context = server.getPigContext();
+        String jarName = "pig-withouthadoop-h2.jar";
+        if (System.getProperty("hadoopversion").equals("20")) {
+            jarName = "pig-withouthadoop-h1.jar";
+        }
 
-        String strCmd = "register 'pig-withouthadoop.jar'\n";
+        String strCmd = "register '" + jarName + "'\n";
 
         ByteArrayInputStream cmd = new ByteArrayInputStream(strCmd.getBytes());
         InputStreamReader reader = new InputStreamReader(cmd);
@@ -1196,15 +1201,18 @@ public class TestGrunt {
 
         grunt.exec();
         assertEquals(context.extraJars+ " of size 1", 1, context.extraJars.size());
-        assertTrue(context.extraJars.get(0)+" ends with /pig-withouthadoop.jar", context.extraJars.get(0).toString().endsWith("/pig-withouthadoop.jar"));
+        assertTrue(context.extraJars.get(0)+" ends with /" + jarName, context.extraJars.get(0).toString().endsWith("/" + jarName));
     }
 
     @Test
     public void testRegisterWithoutQuotes() throws Throwable {
         PigServer server = new PigServer(cluster.getExecType(), cluster.getProperties());
         PigContext context = server.getPigContext();
-
-        String strCmd = "register pig-withouthadoop.jar\n";
+        String jarName = "pig-withouthadoop-h2.jar";
+        if (System.getProperty("hadoopversion").equals("20")) {
+            jarName = "pig-withouthadoop-h1.jar";
+        }
+        String strCmd = "register " + jarName + "\n";
 
         ByteArrayInputStream cmd = new ByteArrayInputStream(strCmd.getBytes());
         InputStreamReader reader = new InputStreamReader(cmd);
@@ -1213,7 +1221,7 @@ public class TestGrunt {
 
         grunt.exec();
         assertEquals(context.extraJars+ " of size 1", 1, context.extraJars.size());
-        assertTrue(context.extraJars.get(0)+" ends with /pig-withouthadoop.jar", context.extraJars.get(0).toString().endsWith("/pig-withouthadoop.jar"));
+        assertTrue(context.extraJars.get(0)+" ends with /" + jarName, context.extraJars.get(0).toString().endsWith("/" + jarName));
     }
 
     @Test
